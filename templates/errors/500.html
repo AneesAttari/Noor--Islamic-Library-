@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Something went wrong — {{ app_name }}{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="empty-state">
+      <p class="eyebrow">Error 500</p>
+      <h1>Something went wrong</h1>
+      <p>The server hit an unexpected problem. Please try again in a moment.</p>
+      <a class="btn btn-primary" href="{{ url_for('public.index') }}">Back to the library</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Not permitted — {{ app_name }}{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="empty-state">
+      <p class="eyebrow">Error 403</p>
+      <h1>Not permitted</h1>
+      <p>{{ message or 'You do not have permission to perform this action.' }}</p>
+      <a class="btn btn-primary" href="{{ url_for('public.index') }}">Back to the library</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

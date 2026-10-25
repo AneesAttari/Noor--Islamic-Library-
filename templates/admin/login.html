@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Administrator sign in — {{ app_name }}{% endblock %}
+
+{% block content %}
+<section class="auth-wrap">
+  <div class="auth-card">
+    <p class="eyebrow">Administration</p>
+    <h1>Administrator sign in</h1>
+    <p class="auth-note">Library staff only. Visitors do not need an account to read books.</p>
+
+    <form method="post" action="{{ url_for('admin.login', next=request.args.get('next', '')) }}" class="stack-form" autocomplete="off">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="filter-group">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" value="{{ username }}" required autofocus autocapitalize="none" spellcheck="false">
+      </div>
+      <div class="filter-group">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

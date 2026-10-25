@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% from "_book_card.html" import book_card %}
+
+{% block title %}Catalogue — {{ app_name }}{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <p class="eyebrow">Library catalogue</p>
+    <h1>{% if q %}Results for “{{ q }}”{% elif category %}{{ category }}{% else %}All books{% endif %}</h1>
+    <p class="page-sub">{{ total }} book{{ '' if total == 1 else 's' }} found{% if language %} in {{ language }}{% endif %}.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container catalogue-layout">
+    <aside class="filters" aria-label="Filter books">
+      <form method="get" action="{{ url_for('public.catalogue') }}" class="filter-form">
+        {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+        <div class="filter-group">
+          <label for="f-cat">Category</label>
+          <select id="f-cat" name="category">
+            <option value="">All categories</option>
+            {% for row in categories %}
+              <option value="{{ row['category'] }}" {{ 'selected' if row['category'] == category }}>{{ row['category'] }} ({{ row['n'] }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="f-lang">Language</label>
+          <select id="f-lang" name="language">
+            <option value="">All languages</option>
+            {% for row in languages %}
+              <option value="{{ row['language'] }}" {{ 'selected' if row['language'] == language }}>{{ row['language'] }} ({{ row['n'] }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="f-sort">Sort by</label>
+          <select id="f-sort" name="sort">
+            <option value="newest" {{ 'selected' if sort == 'newest' }}>Newest first</option>
+            <option value="oldest" {{ 'selected' if sort == 'oldest' }}>Oldest first</option>
+            <option value="title" {{ 'selected' if sort == 'title' }}>Title A–Z</option>
+            <option value="author" {{ 'selected' if sort == 'author' }}>Author A–Z</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Apply filters</button>
+        {% if q or category or language or sort != 'newest' %}
+          <a class="btn btn-ghost btn-block" href="{{ url_for('public.catalogue') }}">Clear all</a>
+        {% endif %}
+      </form>
+    </aside>
+
+    <div class="catalogue-main">
+      {% if books %}
+        <div class="book-grid">
+          {% for book in books %}{{ book_card(book) }}{% endfor %}
+        </div>
+
+        {% if total_pages > 1 %}
+        <nav class="pagination" aria-label="Catalogue pages">
+          {% if page > 1 %}
+            <a class="page-btn" href="{{ url_for('public.catalogue', q=q, category=category, language=language, sort=sort, page=page-1) }}">← Previous</a>
+          {% endif %}
+          <span class="page-status">Page {{ page }} of {{ total_pages }}</span>
+          {% if page < total_pages %}
+            <a class="page-btn" href="{{ url_for('public.catalogue', q=q, category=category, language=language, sort=sort, page=page+1) }}">Next →</a>
+          {% endif %}
+        </nav>
+        {% endif %}
+
+      {% else %}
+        <div class="empty-state">
+          <h2>No books found</h2>
+          {% if q %}
+            <p>Nothing matches “{{ q }}”{% if category %} in {{ category }}{% endif %}. Try a different word, or browse the full catalogue.</p>
+          {% else %}
+            <p>No books match the current filters.</p>
+          {% endif %}
+          <a class="btn btn-primary" href="{{ url_for('public.catalogue') }}">Browse the full catalogue</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

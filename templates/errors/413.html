@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Upload too large — {{ app_name }}{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="empty-state">
+      <p class="eyebrow">Error 413</p>
+      <h1>Upload too large</h1>
+      <p>The file you tried to send exceeds the server’s limit of 100 MB. Please upload a smaller PDF.</p>
+      <a class="btn btn-primary" href="{{ url_for('public.index') }}">Back to the library</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

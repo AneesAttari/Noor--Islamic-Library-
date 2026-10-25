@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% from "_book_card.html" import book_card %}
+
+{% block content %}
+<section class="hero">
+  <div class="container hero-inner">
+    <p class="eyebrow">Open · Free · No account required</p>
+    <h1>A quiet place to find and read Islamic&nbsp;books.</h1>
+    <p class="hero-lede">{{ app_name }} is a public digital library. Browse the catalogue, search by title, author, or subject, and read every published book online — page by page, in your browser.</p>
+
+    <form class="hero-search" action="{{ url_for('public.catalogue') }}" method="get" role="search">
+      <label class="sr-only" for="hero-q">Search by title, author, or category</label>
+      <input id="hero-q" type="search" name="q" placeholder="Search by title, author, or category…" autocomplete="off">
+      <label class="sr-only" for="hero-cat">Category</label>
+      <select id="hero-cat" name="category">
+        <option value="">All categories</option>
+        {% for row in categories %}
+          <option value="{{ row['category'] }}">{{ row['category'] }} ({{ row['n'] }})</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary">Search library</button>
+    </form>
+
+    {% if categories %}
+    <p class="hero-chips">
+      {% for row in categories[:6] %}
+        <a class="chip" href="{{ url_for('public.catalogue', category=row['category']) }}">{{ row['category'] }}</a>
+      {% endfor %}
+    </p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="stats-strip" aria-label="Library statistics">
+      <div class="stat"><span class="stat-num">{{ stats.published }}</span><span class="stat-label">Published books</span></div>
+      <div class="stat"><span class="stat-num">{{ stats.categories }}</span><span class="stat-label">Categories</span></div>
+      <div class="stat"><span class="stat-num">{{ stats.languages }}</span><span class="stat-label">Languages</span></div>
+      <div class="stat"><span class="stat-num">PDF</span><span class="stat-label">Read online or download</span></div>
+    </div>
+  </div>
+</section>
+
+{% if featured %}
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <h2>Featured books</h2>
+      <a class="section-link" href="{{ url_for('public.catalogue') }}">Browse all →</a>
+    </div>
+    <div class="book-grid">
+      {% for book in featured %}{{ book_card(book) }}{% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if recent %}
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-head">
+      <h2>Recently added</h2>
+      <a class="section-link" href="{{ url_for('public.catalogue', sort='newest') }}">See everything →</a>
+    </div>
+    <div class="book-grid">
+      {% for book in recent %}{{ book_card(book) }}{% endfor %}
+    </div>
+  </div>
+</section>
+{% elif not featured %}
+<section class="section">
+  <div class="container">
+    <div class="empty-state">
+      <h2>The library is empty — for now</h2>
+      <p>No books have been published yet. If you are an administrator, sign in to add the first book.</p>
+      <a class="btn btn-primary" href="{{ url_for('admin.login') }}">Administrator sign in</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if categories %}
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <h2>Browse by category</h2>
+      <a class="section-link" href="{{ url_for('public.categories') }}">All categories →</a>
+    </div>
+    <ul class="category-grid">
+      {% for row in categories %}
+      <li>
+        <a class="category-card" href="{{ url_for('public.catalogue', category=row['category']) }}">
+          <span class="category-name">{{ row['category'] }}</span>
+          <span class="category-count">{{ row['n'] }} book{{ '' if row['n'] == 1 else 's' }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

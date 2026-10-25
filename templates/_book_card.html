@@ -1,0 +1,19 @@
+{% macro book_card(book) %}
+<article class="book-card">
+  <a class="book-card-cover" href="{{ url_for('public.book_detail', book_id=book['id']) }}">
+    <img src="{{ url_for('public.book_cover', book_id=book['id']) }}" alt="Cover of {{ book['title'] }}" loading="lazy" width="400" height="600">
+  </a>
+  <div class="book-card-body">
+    <p class="eyebrow">{{ book['category'] }}</p>
+    <h3 class="book-card-title"><a href="{{ url_for('public.book_detail', book_id=book['id']) }}">{{ book['title'] }}</a></h3>
+    <p class="book-card-author">{{ book['author'] }}</p>
+    <p class="book-card-meta">
+      <span>{{ book['language'] }}</span>
+      {% if book['page_count'] %}<span aria-hidden="true">·</span> <span>{{ book['page_count'] }} pages</span>{% endif %}
+    </p>
+    {% if not book['published'] %}
+      <p class="badge badge-draft">Unpublished</p>
+    {% endif %}
+  </div>
+</article>
+{% endmacro %}

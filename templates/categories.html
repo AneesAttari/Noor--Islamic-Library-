@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Categories — {{ app_name }}{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <p class="eyebrow">Subjects</p>
+    <h1>Categories</h1>
+    <p class="page-sub">Every published book is filed under one category. Choose a subject to browse its shelf.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    {% if categories %}
+      <ul class="category-grid">
+        {% for row in categories %}
+        <li>
+          <a class="category-card" href="{{ url_for('public.catalogue', category=row['category']) }}">
+            <span class="category-name">{{ row['category'] }}</span>
+            <span class="category-count">{{ row['n'] }} book{{ '' if row['n'] == 1 else 's' }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state">
+        <h2>No categories yet</h2>
+        <p>Categories appear here once books are published.</p>
+        <a class="btn btn-primary" href="{{ url_for('public.catalogue') }}">Browse the catalogue</a>
+      </div>
+    {% endif %}
+
+    {% if languages %}
+    <div class="subsection">
+      <h2>Languages</h2>
+      <p class="hero-chips">
+        {% for row in languages %}
+          <a class="chip" href="{{ url_for('public.catalogue', language=row['language']) }}">{{ row['language'] }} · {{ row['n'] }}</a>
+        {% endfor %}
+      </p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

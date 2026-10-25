@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Add a book' if mode == 'new' else 'Edit: ' ~ book['title'] }} — {{ app_name }}{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <p class="eyebrow">Administration</p>
+    <h1>{{ 'Add a book' if mode == 'new' else 'Edit book' }}</h1>
+    <p class="page-sub">
+      {% if mode == 'new' %}
+        Upload a PDF, describe the book, and choose whether to publish it immediately.
+      {% else %}
+        Update the book’s details. Replace the PDF or cover only if you need to.
+      {% endif %}
+    </p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container form-narrow">
+    <form method="post"
+          action="{{ url_for('admin.book_new') if mode == 'new' else url_for('admin.book_edit', book_id=book['id']) }}"
+          enctype="multipart/form-data" class="stack-form" id="book-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="filter-group">
+        <label for="title">Title <span class="req">*</span></label>
+        <input id="title" name="title" type="text" required maxlength="300" value="{{ book['title'] if book else '' }}">
+      </div>
+
+      <div class="filter-group">
+        <label for="author">Author <span class="req">*</span></label>
+        <input id="author" name="author" type="text" required maxlength="200" value="{{ book['author'] if book else '' }}">
+      </div>
+
+      <div class="form-row">
+        <div class="filter-group">
+          <label for="category">Category <span class="req">*</span></label>
+          <input id="category" name="category" type="text" required maxlength="100" list="category-suggestions" value="{{ book['category'] if book else '' }}">
+          <datalist id="category-suggestions">
+            {% for row in nav_categories %}<option value="{{ row }}">{% endfor %}
+          </datalist>
+        </div>
+        <div class="filter-group">
+          <label for="language">Language <span class="req">*</span></label>
+          <input id="language" name="language" type="text" required maxlength="60" value="{{ book['language'] if book else 'English' }}">
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="6" maxlength="5000">{{ book['description'] if book else '' }}</textarea>
+        <p class="hint">A short summary shown on the book’s page.</p>
+      </div>
+
+      <div class="filter-group">
+        <label for="pdf">PDF file {% if mode == 'new' %}<span class="req">*</span>{% endif %}</label>
+        {% if mode == 'edit' %}
+          <p class="hint">Current file: {{ book['pdf_filename'] }} · {{ book['page_count'] }} pages · {{ book['pdf_size']|humansize }}. Uploading a new PDF replaces it.</p>
+        {% endif %}
+        <input id="pdf" name="pdf" type="file" accept="application/pdf,.pdf" {{ 'required' if mode == 'new' }}>
+        <p class="hint">Only PDF files, up to 100 MB.</p>
+      </div>
+
+      <div class="filter-group">
+        <label for="cover">Cover image (optional)</label>
+        {% if book and book['cover_filename'] %}
+          <p class="hint">Current cover uploaded. Uploading a new image replaces it.</p>
+        {% else %}
+          <p class="hint">JPEG or PNG, at least 100×100 px. If omitted, a plain cover is generated automatically.</p>
+        {% endif %}
+        <input id="cover" name="cover" type="file" accept="image/*">
+        {% if mode == 'edit' and book['cover_filename'] %}
+          <label class="check-line"><input type="checkbox" name="remove_cover" value="1"> Remove the uploaded cover</label>
+        {% endif %}
+      </div>
+
+      <div class="check-row">
+        <label class="check-line"><input type="checkbox" name="published" value="1" {{ 'checked' if book and book['published'] else 'checked' }}> Published (visible to visitors)</label>
+        <label class="check-line"><input type="checkbox" name="featured" value="1" {{ 'checked' if book and book['featured'] }}> Featured on the home page</label>
+      </div>
+
+      <div class="detail-actions">
+        <button type="submit" class="btn btn-primary">{{ 'Add book' if mode == 'new' else 'Save changes' }}</button>
+        <a class="btn btn-ghost" href="{{ url_for('admin.dashboard') }}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}
