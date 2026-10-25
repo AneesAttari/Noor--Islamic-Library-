@@ -866,3 +866,134 @@ label {
 
   .stats-strip { grid-template-columns: 1fr 1fr; }
 }
+
+/* ============================================================
+   Round 1 & 2 additions
+   ============================================================ */
+
+/* --- RTL text (Arabic/Urdu titles and authors) --- */
+[dir="rtl"] {
+  font-family: "Geeza Pro", "Noto Naskh Arabic", "Segoe UI", "Traditional Arabic", serif;
+}
+
+/* --- reader: progress, resume, continuous scroll --- */
+.reader-progress {
+  height: 3px;
+  background: var(--line);
+  border-radius: 2px;
+  margin: 8px auto 0;
+  max-width: var(--wrap);
+  overflow: hidden;
+}
+.reader-progress-bar {
+  height: 100%;
+  width: 0;
+  background: var(--emerald);
+  transition: width 0.15s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reader-progress-bar { transition: none; }
+}
+
+.mode-group .btn[aria-pressed="true"] {
+  border-color: var(--emerald);
+  color: var(--emerald-dark);
+  background: var(--emerald-soft);
+}
+
+.resume-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--emerald-soft);
+  border: 1px solid var(--emerald);
+  border-radius: var(--radius);
+  padding: 10px 18px;
+  margin-bottom: 18px;
+}
+.resume-bar p { margin: 0; font-weight: 600; color: var(--emerald-dark); }
+.resume-bar[hidden] { display: none; }
+
+.scroll-container {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+.scroll-container[hidden] { display: none; }
+
+.page-slot {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  border-bottom: 1px dashed var(--line-strong);
+}
+.page-slot canvas {
+  background: #fff;
+  border: 1px solid var(--line-strong);
+  border-top: 0;
+  box-shadow: 0 2px 10px rgba(34, 31, 26, 0.08);
+}
+.page-slot-label {
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* --- book detail: first-page preview --- */
+.detail-preview {
+  margin: 18px 0 0;
+}
+.detail-preview img {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  background: #fff;
+}
+.detail-preview figcaption {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+}
+.detail-preview a:hover figcaption { color: var(--emerald); }
+
+/* --- admin: action toolbar, inline forms in tables --- */
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 1.5rem 0 2.25rem;
+}
+.admin-actions .btn { margin: 0; }
+
+.action-row select, .action-row input[type="text"] {
+  padding: 0.4em 0.55em;
+  font-size: 0.85rem;
+}
+
+.inline-form.action-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.hint code {
+  background: var(--paper-alt);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+}

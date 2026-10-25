@@ -1,9 +1,8 @@
 """Public (visitor) routes: home, catalogue, search, book detail, PDF reader."""
 from __future__ import annotations
 
-import mimetypes
+import re
 from datetime import datetime
-from urllib.parse import urlencode
 
 from flask import (
     Blueprint,
@@ -12,7 +11,6 @@ from flask import (
     render_template,
     request,
     send_file,
-    url_for,
 )
 
 from . import config, db, storage
@@ -20,6 +18,10 @@ from .covers import render_cover_svg
 from .security import current_admin, ensure_csrf_token
 
 bp = Blueprint("public", __name__)
+
+_ARABIC_RE = re.compile(
+    r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]"
+)
 
 
 def _is_admin() -> bool:
@@ -32,8 +34,9 @@ def _is_admin() -> bool:
 
 @bp.route("/")
 def index():
-    featured, _ = db.list_books(featured=1, published_only=True, limit=6)
+    featured = db.featured_ordered()[:6]
     recent, _ = db.list_books(sort="newest", published_only=True, limit=8)
+    popular = db.popular_books(days=30, limit=6)
     categories = db.category_counts()
     stats = db.stats()
     stats["languages"] = len(db.language_counts())
@@ -41,6 +44,7 @@ def index():
         "index.html",
         featured=featured,
         recent=recent,
+        popular=popular,
         categories=categories,
         stats=stats,
     )
@@ -109,6 +113,8 @@ def read(book_id: int):
     book = db.get_book(book_id, published_only=not _is_admin())
     if book is None:
         abort(404)
+    if not _is_admin():
+        db.record_event(book_id, "read")
     return render_template("reader.html", book=book)
 
 
@@ -118,8 +124,6 @@ def read(book_id: int):
 
 @bp.route("/books/<int:book_id>/pdf")
 def book_pdf(book_id: int):
-    """Stream the PDF. Unpublished books are only visible to admins (checked
-    in the backend against the session, not merely hidden in the UI)."""
     book = db.get_book(book_id, published_only=not _is_admin())
     if book is None:
         abort(404)
@@ -131,13 +135,15 @@ def book_pdf(book_id: int):
         abort(404)
 
     download = request.args.get("download") == "1"
+    if download and not _is_admin():
+        db.record_event(book_id, "download")
     safe_name = _download_name(book)
     resp = send_file(
         path,
         mimetype="application/pdf",
         as_attachment=download,
         download_name=safe_name,
-        conditional=True,  # enables HTTP Range requests for the reader
+        conditional=True,
         max_age=0,
     )
     resp.headers["X-Content-Type-Options"] = "nosniff"
@@ -166,6 +172,23 @@ def book_cover(book_id: int):
         mimetype="image/svg+xml",
         headers={"Cache-Control": "public, max-age=3600", "X-Content-Type-Options": "nosniff"},
     )
+
+
+@bp.route("/books/<int:book_id>/preview")
+def book_preview(book_id: int):
+    """First-page thumbnail rendered from the actual PDF."""
+    book = db.get_book(book_id, published_only=not _is_admin())
+    if book is None or not book["preview_filename"]:
+        abort(404)
+    try:
+        path = storage.preview_path(book["preview_filename"])
+    except storage.UploadError:
+        abort(404)
+    if not path.is_file():
+        abort(404)
+    resp = send_file(path, mimetype="image/jpeg", conditional=True, max_age=3600)
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    return resp
 
 
 @bp.route("/healthz")
@@ -205,6 +228,12 @@ def humansize(num) -> str:
             return f"{size:.0f} {unit}" if unit == "B" else f"{size:.1f} {unit}"
         size /= 1024
     return ""
+
+
+@bp.app_template_filter("textdir")
+def textdir(value: str) -> str:
+    """'rtl' when the text contains Arabic-script characters, else 'ltr'."""
+    return "rtl" if value and _ARABIC_RE.search(value) else "ltr"
 
 
 @bp.app_context_processor

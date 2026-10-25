@@ -5,8 +5,8 @@
   </a>
   <div class="book-card-body">
     <p class="eyebrow">{{ book['category'] }}</p>
-    <h3 class="book-card-title"><a href="{{ url_for('public.book_detail', book_id=book['id']) }}">{{ book['title'] }}</a></h3>
-    <p class="book-card-author">{{ book['author'] }}</p>
+    <h3 class="book-card-title"><a href="{{ url_for('public.book_detail', book_id=book['id']) }}"><span dir="{{ book['title']|textdir }}">{{ book['title'] }}</span></a></h3>
+    <p class="book-card-author"><span dir="{{ book['author']|textdir }}">{{ book['author'] }}</span></p>
     <p class="book-card-meta">
       <span>{{ book['language'] }}</span>
       {% if book['page_count'] %}<span aria-hidden="true">·</span> <span>{{ book['page_count'] }} pages</span>{% endif %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Categories &amp; languages — {{ app_name }}{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <p class="eyebrow">Administration</p>
+    <h1>Categories &amp; languages</h1>
+    <p class="page-sub">Rename or merge names across the whole catalogue. Empty names can be removed; names with books must be renamed or merged.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    {% for field, title, terms in [('category', 'Categories', categories), ('language', 'Languages', languages)] %}
+    <div class="subsection">
+      <h2>{{ title }}</h2>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr><th>Name</th><th>Books</th><th class="col-actions">Rename</th><th class="col-actions">Merge into</th><th class="col-actions">Remove</th></tr>
+          </thead>
+          <tbody>
+            {% for row in terms %}
+            <tr>
+              <td class="table-title">{{ row[field] }}</td>
+              <td>{{ row['n'] }}</td>
+              <td class="col-actions">
+                <form method="post" action="{{ url_for('admin.term_rename') }}" class="inline-form action-row">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="field" value="{{ field }}">
+                  <input type="hidden" name="old" value="{{ row[field] }}">
+                  <input type="text" name="new" placeholder="New name" required maxlength="100" style="width:150px">
+                  <button type="submit" class="btn btn-ghost btn-sm">Rename</button>
+                </form>
+              </td>
+              <td class="col-actions">
+                <form method="post" action="{{ url_for('admin.term_merge') }}" class="inline-form action-row">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="field" value="{{ field }}">
+                  <input type="hidden" name="source" value="{{ row[field] }}">
+                  <select name="target" required>
+                    <option value="">Choose…</option>
+                    {% for other in terms if other[field] != row[field] %}
+                      <option value="{{ other[field] }}">{{ other[field] }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="btn btn-ghost btn-sm">Merge</button>
+                </form>
+              </td>
+              <td class="col-actions">
+                {% if row['n'] == 0 %}
+                <form method="post" action="{{ url_for('admin.term_delete') }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="field" value="{{ field }}">
+                  <input type="hidden" name="name" value="{{ row[field] }}">
+                  <button type="submit" class="btn btn-danger-ghost btn-sm">Remove</button>
+                </form>
+                {% else %}
+                <span class="muted">has books</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

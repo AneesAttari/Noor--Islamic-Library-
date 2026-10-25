@@ -135,6 +135,9 @@ def main() -> int:
                         FileStorage(stream=fh, filename=spec["cover"], content_type="image/jpeg")
                     )
 
+            preview_name = storage.generate_preview(pdf_name)
+            text = storage.extract_pdf_text(pdf_name)
+
             book_id = db.insert_book(
                 {
                     "title": spec["title"],
@@ -146,10 +149,12 @@ def main() -> int:
                     "pdf_size": pdf_size,
                     "page_count": page_count,
                     "cover_filename": cover_name,
+                    "preview_filename": preview_name,
                     "featured": spec["featured"],
                     "published": spec["published"],
                 }
             )
+            db.set_book_text(book_id, text)
             print(
                 f"seeded book #{book_id}: {spec['title']} "
                 f"({page_count} pages, {pdf_size} bytes -> storage/pdfs/{pdf_name})"

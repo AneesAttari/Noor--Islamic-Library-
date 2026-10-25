@@ -1,7 +1,7 @@
-"""Persistent file storage for PDFs and covers, with strict upload validation.
+"""Persistent file storage for PDFs, covers, and first-page previews.
 
-Files are written to disk only after they pass validation. Nothing is claimed
-as uploaded unless the bytes were actually fsynced to storage/ and the
+Files are written to disk only after passing validation. Nothing is claimed
+as uploaded unless the bytes were actually written to storage/ and the
 metadata row committed to SQLite.
 """
 from __future__ import annotations
@@ -22,6 +22,16 @@ class UploadError(Exception):
     """Raised when an upload fails validation; the message is user-facing."""
 
 
+PREVIEW_DIR_NAME = "previews"
+MAX_EXTRACT_CHARS = 1_000_000
+
+
+def preview_dir() -> Path:
+    d = config.STORAGE_DIR / PREVIEW_DIR_NAME
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
 # --------------------------------------------------------------------------
 # PDF
 # --------------------------------------------------------------------------
@@ -39,7 +49,6 @@ def validate_and_save_pdf(upload: FileStorage) -> tuple[str, int, int]:
     if not original.lower().endswith(".pdf"):
         raise UploadError("Only PDF files are accepted (filename must end in .pdf).")
 
-    # Read the stream once, enforcing the size cap while copying.
     buffer = io.BytesIO()
     size = 0
     while True:
@@ -58,7 +67,6 @@ def validate_and_save_pdf(upload: FileStorage) -> tuple[str, int, int]:
     if not buffer.getvalue().startswith(b"%PDF-"):
         raise UploadError("The file is not a valid PDF (missing %PDF header).")
 
-    # Structural check: must be readable and contain at least one page.
     try:
         reader = PdfReader(buffer)
         page_count = len(reader.pages)
@@ -66,10 +74,9 @@ def validate_and_save_pdf(upload: FileStorage) -> tuple[str, int, int]:
             raise UploadError("The PDF contains no pages.")
     except UploadError:
         raise
-    except Exception as exc:  # pypdf parse errors
+    except Exception as exc:
         raise UploadError(f"The PDF could not be read: {exc}") from exc
 
-    # Persist with a collision-proof name; never trust the client filename.
     stored_name = f"{uuid.uuid4().hex}.pdf"
     target = config.PDF_DIR / stored_name
     config.ensure_dirs()
@@ -92,6 +99,113 @@ def pdf_path(filename: str) -> Path:
 def delete_pdf(filename: Optional[str]) -> None:
     if filename:
         _unlink_quiet(pdf_path(filename))
+
+
+JUNK_TITLES = {"", "untitled", "untitled document", "document", "microsoft word - document", "no title"}
+JUNK_AUTHORS = JUNK_TITLES | {"anonymous", "reportlab", "unknown", "user"}
+
+
+def _clean_meta_title(value: str) -> str:
+    v = (value or "").strip()
+    return "" if v.lower() in JUNK_TITLES else v
+
+
+def read_pdf_metadata(filename: str) -> dict:
+    """Return embedded title/author/page_count from a stored PDF (best effort)."""
+    result = {"title": "", "author": "", "page_count": 0}
+    try:
+        reader = PdfReader(str(pdf_path(filename)))
+        result["page_count"] = len(reader.pages)
+        meta = reader.metadata
+        if meta:
+            title = _clean_meta_title(meta.title if hasattr(meta, "title") else "")
+            author = (meta.author or "").strip() if hasattr(meta, "author") else ""
+            if title and len(title) < 300:
+                result["title"] = title
+            if author and len(author) < 200 and author.lower() not in JUNK_AUTHORS:
+                result["author"] = author
+    except Exception:
+        pass
+    return result
+
+
+def probe_pdf_bytes(data: bytes) -> dict:
+    """Read metadata from in-memory PDF bytes without persisting anything."""
+    result = {"ok": False, "title": "", "author": "", "page_count": 0, "error": ""}
+    if not data.startswith(b"%PDF-"):
+        result["error"] = "The file is not a valid PDF (missing %PDF header)."
+        return result
+    try:
+        reader = PdfReader(io.BytesIO(data))
+        result["page_count"] = len(reader.pages)
+        meta = reader.metadata
+        if meta:
+            result["title"] = _clean_meta_title(meta.title if hasattr(meta, "title") else "")[:300]
+            author = (meta.author or "").strip() if hasattr(meta, "author") else ""
+            result["author"] = ("" if author.lower() in JUNK_AUTHORS else author)[:200]
+        result["ok"] = True
+    except Exception as exc:
+        result["error"] = f"The PDF could not be read: {exc}"
+    return result
+
+
+def extract_pdf_text(filename: str) -> str:
+    """Extract the visible text of a stored PDF for the search index.
+
+    Truncated to MAX_EXTRACT_CHARS so the index stays bounded. Failures
+    return '' rather than breaking the upload flow.
+    """
+    try:
+        reader = PdfReader(str(pdf_path(filename)))
+        parts: list[str] = []
+        total = 0
+        for page in reader.pages:
+            try:
+                text = page.extract_text() or ""
+            except Exception:
+                text = ""
+            parts.append(text)
+            total += len(text)
+            if total >= MAX_EXTRACT_CHARS:
+                break
+        return "\n".join(parts)[:MAX_EXTRACT_CHARS]
+    except Exception:
+        return ""
+
+
+def generate_preview(filename: str) -> Optional[str]:
+    """Render page 1 of a stored PDF to JPEG. Returns stored filename or None.
+
+    A missing preview never blocks an upload — the UI degrades gracefully.
+    """
+    try:
+        import pypdfium2 as pdfium
+
+        pdf = pdfium.PdfDocument(str(pdf_path(filename)))
+        try:
+            if len(pdf) < 1:
+                return None
+            page = pdf[0]
+            bitmap = page.render(scale=2.0)
+            pil = bitmap.to_pil()
+            pil = pil.convert("RGB")
+            pil.thumbnail((900, 1300))
+            stored_name = f"{uuid.uuid4().hex}.jpg"
+            pil.save(preview_dir() / stored_name, format="JPEG", quality=82)
+            return stored_name
+        finally:
+            pdf.close()
+    except Exception:
+        return None
+
+
+def preview_path(filename: str) -> Path:
+    return _safe_child(preview_dir(), filename)
+
+
+def delete_preview(filename: Optional[str]) -> None:
+    if filename:
+        _unlink_quiet(preview_path(filename))
 
 
 # --------------------------------------------------------------------------
@@ -127,8 +241,7 @@ def validate_and_save_cover(upload: FileStorage) -> str:
 
     stored_name = f"{uuid.uuid4().hex}.jpg"
     config.ensure_dirs()
-    target = config.COVER_DIR / stored_name
-    image.save(target, format="JPEG", quality=85)
+    image.save(config.COVER_DIR / stored_name, format="JPEG", quality=85)
     return stored_name
 
 
@@ -141,14 +254,26 @@ def delete_cover(filename: Optional[str]) -> None:
         _unlink_quiet(cover_path(filename))
 
 
+def parse_title_author(filename: str) -> tuple[str, str]:
+    """Guess (title, author) from a filename like 'Author - Title.pdf'."""
+    stem = Path(filename).stem.replace("_", " ").strip()
+    for sep in (" - ", " – ", " — ", " -- "):
+        if sep in stem:
+            left, right = stem.split(sep, 1)
+            author, title = left.strip(), right.strip()
+            if title and author:
+                return title[:300], author[:200]
+    return stem[:300], ""
+
+
 # --------------------------------------------------------------------------
 # helpers
 # --------------------------------------------------------------------------
 
 def _safe_child(directory: Path, filename: str) -> Path:
-    """Resolve filename inside directory, rejecting any path traversal."""
     if not filename or "/" in filename or "\\" in filename or filename.startswith("."):
         raise UploadError("Invalid storage filename.")
+    directory.mkdir(parents=True, exist_ok=True)
     candidate = (directory / filename).resolve()
     if candidate.parent != directory.resolve():
         raise UploadError("Invalid storage filename.")

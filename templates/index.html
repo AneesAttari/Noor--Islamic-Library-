@@ -56,8 +56,22 @@
 </section>
 {% endif %}
 
-{% if recent %}
+{% if popular %}
 <section class="section section-alt">
+  <div class="container">
+    <div class="section-head">
+      <h2>Popular this month</h2>
+      <a class="section-link" href="{{ url_for('public.catalogue', sort='popular') }}">Most read →</a>
+    </div>
+    <div class="book-grid">
+      {% for book in popular %}{{ book_card(book) }}{% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if recent %}
+<section class="section {{ 'section-alt' if not popular }}">
   <div class="container">
     <div class="section-head">
       <h2>Recently added</h2>

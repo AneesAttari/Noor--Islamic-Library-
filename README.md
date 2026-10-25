@@ -12,24 +12,41 @@ external services, trivial to back up (two directories).
 ## Features
 
 **Public (no login)**
-- Home page with search, featured books, recently added, and categories
-- Catalogue with filters (category, language), sorting, and pagination
-- Full-text search across title, author, category, and description
-- Book detail pages with cover, metadata, and description
+- Home page with search, featured books, popular-this-month, recently added,
+  and categories
+- Catalogue with filters (category, language), sorting (incl. popularity),
+  and pagination
+- Full-text search across title, author, category, description **and the
+  extracted text inside every PDF** (SQLite FTS5 index)
+- Book detail pages with cover, first-page preview ("look inside"), metadata,
+  and read/download counts
 - Dedicated PDF reader (PDF.js, served locally) with page navigation,
-  page-jump input, zoom in/out, fit-width, and keyboard shortcuts
-  (← → for pages, +/− for zoom)
+  page-jump input, zoom in/out, fit-width, keyboard shortcuts (← → pages,
+  +/− zoom), **single-page and continuous-scroll modes**, a progress bar,
+  and **“continue where you left off”** (position remembered per book in
+  `localStorage` — no account needed)
+- RTL rendering for Arabic-script titles and authors
 - Download as PDF
 - Clear loading, empty, and error states throughout
 
 **Administration** (`/admin`)
 - Login with throttling (10 failures / 15 min per account+IP → 429)
-- Dashboard with statistics and the full book list
+- Dashboard with statistics, the full book list, and read/download counts
 - Add a book: PDF upload (validated), optional cover upload, metadata
+  **auto-filled from the PDF's embedded title/author**
+- **Bulk upload**: many PDFs at once, titles/authors parsed from PDF metadata
+  or filenames (`Author - Title.pdf`), with an honest per-file results report
 - Edit a book: update metadata, replace the PDF or cover, remove the cover
+- **PDF version safety**: replaced PDFs are kept as restorable revisions
 - Publish / unpublish (unpublished books are invisible to visitors at the
   **backend** level — detail, reader, and PDF endpoints all return 404)
-- Delete a book (removes the database row **and** the stored PDF/cover files)
+- **Featured ordering**: pin, reorder (↑ ↓ / top), and unpin the home shelf
+- **Trash**: delete is a soft-delete; restore later or "delete forever"
+  (which removes the row and every stored file)
+- **Categories & languages manager**: rename or merge across the catalogue
+- **Audit log**: every change recorded with admin, action, book, and time
+- **Backup & export**: one-click zip (SQLite snapshot + all PDFs/covers/
+  previews) and CSV catalogue export
 
 ## Security model
 
@@ -40,6 +57,8 @@ external services, trivial to back up (two directories).
 | Authorization | Every mutating route re-checks the session against the `admins` table server-side. Public queries filter `published = 1` in SQL. |
 | CSRF | Per-session token required on every POST; compared with `hmac.compare_digest`. |
 | Uploads | PDFs verified by magic bytes (`%PDF-`) **and** parsed with pypdf; size cap 100 MB; stored under random UUID names (client filenames never trusted); path-traversal protected. Covers verified with Pillow, re-encoded to JPEG. |
+| Deletion | Soft-delete to Trash first; files are only removed on an explicit "delete forever". Replaced PDFs are kept as restorable revisions. |
+| Privacy | Popularity counting stores only book id + kind + timestamp — no user identifiers. Reader positions stay in the visitor's own `localStorage`. |
 | Login abuse | Sliding-window rate limiting returns HTTP 429. |
 | Transport | Session cookie is `HttpOnly`, `SameSite=Lax`; set `IDL_SECURE_COOKIES=1` behind HTTPS. |
 | Headers | CSP, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` on every response. |
@@ -117,11 +136,16 @@ Restore by copying them back.
 python3 -m pytest tests/ -v
 ```
 
-23 end-to-end tests cover: public browsing/search/detail/reader, PDF
+37 end-to-end tests cover: public browsing/search/detail/reader, PDF
 streaming and Range requests, unpublished-book protection, login (wrong
 password, wrong CSRF, rate limiting, logout), real multipart uploads with
-disk persistence, invalid upload rejection, edit/PDF-replacement, delete with
-file cleanup, missing-CSRF rejection, and secret-leak checks.
+disk persistence, invalid upload rejection, edit/PDF-replacement with
+revision recovery, trash → restore → permanent delete with file cleanup,
+missing-CSRF rejection, secret-leak checks — plus the Round 1/2 features:
+PDF full-text search, reader resume UI, RTL detection, read/download
+counting and the popular shelf, first-page previews, bulk upload, PDF
+metadata probing, category rename/merge, the audit log, featured pinning,
+backup zips, and CSV export.
 
 All flows were also smoke-tested against the running server with curl.
 
@@ -132,10 +156,13 @@ app code        idl/            (config, db, security, storage, covers, views)
 templates       templates/      (public pages, reader, admin, errors)
 static          static/         (css, js, vendored pdf.js, favicon)
 persistent data data/           (library.db, secret_key)   ← back up
-persistent files storage/       (pdfs/, covers/)           ← back up
-scripts         scripts/        (create_admin, make_samples, seed)
+persistent files storage/       (pdfs/, covers/, previews/)  ← back up
+scripts         scripts/        (create_admin, make_samples, seed, backfill)
 tests           tests/          (pytest end-to-end suite)
 ```
+
+Upgrades of an existing install: run `python3 scripts/backfill.py` once to
+index PDF texts and generate first-page previews for older books.
 
 ## Sample content
 

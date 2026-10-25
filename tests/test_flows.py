@@ -23,13 +23,12 @@ from reportlab.pdfgen import canvas as pdf_canvas
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # Point the app at a throwaway data directory before importing it.
-TEST_ROOT = Path(__file__).resolve().parent / "_tmp_data"
 import os
 
-os.environ["IDL_DATA_DIR"] = str(TEST_ROOT / "data")
-os.environ["IDL_STORAGE_DIR"] = str(TEST_ROOT / "storage")
+from idl import config, create_app, db, security  # noqa: E402
 
-from idl import create_app, db, security  # noqa: E402
+TEST_ROOT = Path(__file__).resolve().parent / "_tmp_data"
+STORAGE_DIR = config.STORAGE_DIR
 
 ADMIN_USER = "testadmin"
 ADMIN_PASS = "correct-horse-battery-staple"
@@ -339,7 +338,7 @@ def test_add_book_upload_and_visibility(client, app):
         book = rows[0]
         book_id = book["id"]
         # real file exists and is a real PDF
-        pdf_file = Path(os.environ["IDL_STORAGE_DIR"]) / "pdfs" / book["pdf_filename"]
+        pdf_file = STORAGE_DIR / "pdfs" / book["pdf_filename"]
         assert pdf_file.is_file()
         assert pdf_file.read_bytes().startswith(b"%PDF-")
         assert book["page_count"] == 4
@@ -374,7 +373,7 @@ def test_add_book_with_cover(client, app):
     with app.app_context():
         rows, _ = db.list_books(q="Book With Cover", published_only=False)
         book = rows[0]
-        cover_file = Path(os.environ["IDL_STORAGE_DIR"]) / "covers" / book["cover_filename"]
+        cover_file = STORAGE_DIR / "covers" / book["cover_filename"]
         assert cover_file.is_file()
 
     resp = client.get(f"/books/{book['id']}/cover")
@@ -533,12 +532,14 @@ def test_replace_pdf_on_edit(client, app):
         book = rows[0]
         assert book["page_count"] == 5
         assert book["pdf_filename"] != old_file
-        # old file removed from disk
-        assert not (Path(os.environ["IDL_STORAGE_DIR"]) / "pdfs" / old_file).exists()
-        assert (Path(os.environ["IDL_STORAGE_DIR"]) / "pdfs" / book["pdf_filename"]).exists()
+        # the old file is kept on disk as a recoverable revision
+        assert (STORAGE_DIR / "pdfs" / old_file).exists()
+        assert (STORAGE_DIR / "pdfs" / book["pdf_filename"]).exists()
+        revs = db.list_revisions(book_id)
+        assert len(revs) == 1 and revs[0]["pdf_filename"] == old_file
 
 
-def test_delete_book_removes_files(client, app):
+def test_delete_book_goes_to_trash_then_purge_removes_files(client, app):
     login(client)
     token = _admin_csrf(client)
     resp = client.post(
@@ -559,7 +560,7 @@ def test_delete_book_removes_files(client, app):
         rows, _ = db.list_books(q="Doomed Book", published_only=False)
         book = rows[0]
         book_id = book["id"]
-        pdf_file = Path(os.environ["IDL_STORAGE_DIR"]) / "pdfs" / book["pdf_filename"]
+        pdf_file = STORAGE_DIR / "pdfs" / book["pdf_filename"]
         assert pdf_file.exists()
 
     html = client.get("/admin/").get_data(as_text=True)
@@ -567,10 +568,28 @@ def test_delete_book_removes_files(client, app):
     resp = client.post(f"/admin/books/{book_id}/delete", data={"csrf_token": token})
     assert resp.status_code == 302
 
+    # soft delete: hidden from everyone, but files and row remain in trash
+    assert client.get(f"/books/{book_id}").status_code == 404
+    assert pdf_file.exists()
+    with app.app_context():
+        row = db.get_book(book_id, published_only=False, include_deleted=True)
+        assert row is not None and row["deleted_at"] is not None
+
+    # trash page lists it; restore brings it back
+    trash_html = client.get("/admin/trash").get_data(as_text=True)
+    assert "Doomed Book" in trash_html
+    resp = client.post(f"/admin/books/{book_id}/restore", data={"csrf_token": token})
+    assert resp.status_code == 302
+    assert client.get(f"/books/{book_id}").status_code == 200
+
+    # trash again, then purge forever: files and row are gone
+    client.post(f"/admin/books/{book_id}/delete", data={"csrf_token": token})
+    resp = client.post(f"/admin/books/{book_id}/purge", data={"csrf_token": token})
+    assert resp.status_code == 302
     assert not pdf_file.exists()
     assert client.get(f"/books/{book_id}").status_code == 404
     with app.app_context():
-        assert db.get_book(book_id, published_only=False) is None
+        assert db.get_book(book_id, published_only=False, include_deleted=True) is None
 
 
 def test_mutations_reject_missing_csrf(client, app, seeded_book_id):

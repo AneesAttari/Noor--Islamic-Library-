@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Audit log — {{ app_name }}{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <p class="eyebrow">Administration</p>
+    <h1>Audit log</h1>
+    <p class="page-sub">Every change to the library is recorded: who did what, to which book, and when. Showing the latest 200 entries.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    {% if entries %}
+    <div class="table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr><th>When (UTC)</th><th>Admin</th><th>Action</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+          {% for e in entries %}
+          <tr>
+            <td class="muted">{{ e['created_at'][:19].replace('T', ' ') }}</td>
+            <td>{{ e['admin_username'] or '—' }}</td>
+            <td><span class="badge">{{ e['action'] }}</span></td>
+            <td>
+              {% if e['book_id'] %}
+                <a href="{{ url_for('public.book_detail', book_id=e['book_id']) }}">#{{ e['book_id'] }}</a>
+              {% endif %}
+              {{ e['detail'] }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty-state">
+        <h2>No activity yet</h2>
+        <p>Actions you take in the admin area will appear here.</p>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

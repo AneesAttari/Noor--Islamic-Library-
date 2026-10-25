@@ -17,12 +17,22 @@
       <div class="stat"><span class="stat-num">{{ stats.total }}</span><span class="stat-label">Books total</span></div>
       <div class="stat"><span class="stat-num">{{ stats.published }}</span><span class="stat-label">Published</span></div>
       <div class="stat"><span class="stat-num">{{ stats.drafts }}</span><span class="stat-label">Unpublished</span></div>
+      <div class="stat"><span class="stat-num">{{ stats.trashed }}</span><span class="stat-label">In trash</span></div>
       <div class="stat"><span class="stat-num">{{ stats.bytes|humansize }}</span><span class="stat-label">PDF storage used</span></div>
+    </div>
+
+    <div class="admin-actions">
+      <a class="btn btn-primary" href="{{ url_for('admin.book_new') }}">+ Add a book</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin.book_bulk') }}">Bulk upload</a>
+      <a class="btn btn-ghost" href="{{ url_for('admin.terms') }}">Categories &amp; languages</a>
+      <a class="btn btn-ghost" href="{{ url_for('admin.audit_log') }}">Audit log</a>
+      <a class="btn btn-ghost" href="{{ url_for('admin.trash') }}">Trash{% if stats.trashed %} ({{ stats.trashed }}){% endif %}</a>
+      <a class="btn btn-ghost" href="{{ url_for('admin.backup') }}">Download backup</a>
+      <a class="btn btn-ghost" href="{{ url_for('admin.export_csv') }}">Export CSV</a>
     </div>
 
     <div class="section-head">
       <h2>All books</h2>
-      <a class="btn btn-primary" href="{{ url_for('admin.book_new') }}">+ Add a book</a>
     </div>
 
     {% if books %}
@@ -35,6 +45,7 @@
             <th>Category</th>
             <th>Status</th>
             <th>Pages</th>
+            <th>Reads</th>
             <th>Size</th>
             <th>Added</th>
             <th class="col-actions">Actions</th>
@@ -57,6 +68,7 @@
               {% endif %}
             </td>
             <td>{{ book['page_count'] }}</td>
+            <td>{{ book['open_count'] }} / {{ book['download_count'] }}</td>
             <td>{{ book['pdf_size']|humansize }}</td>
             <td>{{ book['created_at']|humandate }}</td>
             <td class="col-actions">
@@ -69,7 +81,7 @@
                 </form>
                 <form method="post" action="{{ url_for('admin.book_delete', book_id=book['id']) }}" class="confirm-delete" data-title="{{ book['title'] }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="btn btn-danger-ghost btn-sm">Delete</button>
+                  <button type="submit" class="btn btn-danger-ghost btn-sm">Trash</button>
                 </form>
               </div>
             </td>
@@ -84,6 +96,55 @@
         <p>Add the first book to start the library. The PDF will be stored on the server and published according to your choice.</p>
         <a class="btn btn-primary" href="{{ url_for('admin.book_new') }}">Add a book</a>
       </div>
+    {% endif %}
+
+    {% if featured_order %}
+    <div class="subsection" id="featured-order">
+      <h2>Featured order (home page)</h2>
+      <p class="hint">Use the arrows to choose the order books appear in the “Featured books” shelf. Pinned books come first.</p>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr><th>#</th><th>Title</th><th>Pin</th><th class="col-actions">Move</th></tr>
+          </thead>
+          <tbody>
+            {% for book in featured_order %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td class="table-title">{{ book['title'] }}</td>
+              <td>
+                {% if book['pinned_order'] %}<span class="badge">Pinned</span>{% else %}<span class="muted">auto</span>{% endif %}
+              </td>
+              <td class="col-actions">
+                <div class="action-row">
+                  <form method="post" action="{{ url_for('admin.book_pin', book_id=book['id']) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="up">
+                    <button type="submit" class="btn btn-ghost btn-sm" aria-label="Move up">↑</button>
+                  </form>
+                  <form method="post" action="{{ url_for('admin.book_pin', book_id=book['id']) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="down">
+                    <button type="submit" class="btn btn-ghost btn-sm" aria-label="Move down">↓</button>
+                  </form>
+                  <form method="post" action="{{ url_for('admin.book_pin', book_id=book['id']) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="top">
+                    <button type="submit" class="btn btn-ghost btn-sm">Top</button>
+                  </form>
+                  <form method="post" action="{{ url_for('admin.book_pin', book_id=book['id']) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="unpin">
+                    <button type="submit" class="btn btn-ghost btn-sm">Unpin</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
     {% endif %}
   </div>
 </section>

@@ -10,8 +10,9 @@
     <p class="page-sub">
       {% if mode == 'new' %}
         Upload a PDF, describe the book, and choose whether to publish it immediately.
+        Title and author are filled automatically from the PDF's metadata when available.
       {% else %}
-        Update the book’s details. Replace the PDF or cover only if you need to.
+        Update the book’s details. Replacing the PDF keeps the old version as a recoverable revision.
       {% endif %}
     </p>
   </div>
@@ -57,10 +58,10 @@
       <div class="filter-group">
         <label for="pdf">PDF file {% if mode == 'new' %}<span class="req">*</span>{% endif %}</label>
         {% if mode == 'edit' %}
-          <p class="hint">Current file: {{ book['pdf_filename'] }} · {{ book['page_count'] }} pages · {{ book['pdf_size']|humansize }}. Uploading a new PDF replaces it.</p>
+          <p class="hint">Current file: {{ book['pdf_filename'] }} · {{ book['page_count'] }} pages · {{ book['pdf_size']|humansize }}. Uploading a new PDF replaces it; the old version is kept as a revision.</p>
         {% endif %}
-        <input id="pdf" name="pdf" type="file" accept="application/pdf,.pdf" {{ 'required' if mode == 'new' }}>
-        <p class="hint">Only PDF files, up to 100 MB.</p>
+        <input id="pdf" name="pdf" type="file" accept="application/pdf,.pdf" {{ 'required' if mode == 'new' }} data-probe-url="{{ url_for('admin.api_probe_pdf') }}">
+        <p class="hint" id="pdf-probe-status">Only PDF files, up to 100 MB. Metadata is read on your device — nothing is stored until you press save.</p>
       </div>
 
       <div class="filter-group">
@@ -86,6 +87,33 @@
         <a class="btn btn-ghost" href="{{ url_for('admin.dashboard') }}">Cancel</a>
       </div>
     </form>
+
+    {% if mode == 'edit' and revisions %}
+    <div class="subsection">
+      <h2>Previous PDF versions</h2>
+      <p class="hint">Replaced PDFs are kept here so you can recover from an accidental overwrite. Restoring swaps the current file with this one.</p>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Replaced on</th><th>Pages</th><th>Size</th><th class="col-actions">Action</th></tr></thead>
+          <tbody>
+            {% for rev in revisions %}
+            <tr>
+              <td>{{ rev['created_at'][:10] }}</td>
+              <td>{{ rev['page_count'] }}</td>
+              <td>{{ rev['pdf_size']|humansize }}</td>
+              <td class="col-actions">
+                <form method="post" action="{{ url_for('admin.revision_restore', book_id=book['id'], revision_id=rev['id']) }}" class="confirm-restore">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-ghost btn-sm">Restore this version</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
   </div>
 </section>
 {% endblock %}

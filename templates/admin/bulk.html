@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk upload — {{ app_name }}{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <p class="eyebrow">Administration</p>
+    <h1>Bulk upload</h1>
+    <p class="page-sub">Add many PDFs at once. Title and author are read from each PDF's metadata, or guessed from the filename (<code>Author - Title.pdf</code>). Everything lands in the same category and language — you can fine-tune each book afterwards.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container form-narrow">
+    <form method="post" action="{{ url_for('admin.book_bulk') }}" enctype="multipart/form-data" class="stack-form" id="bulk-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="filter-group">
+        <label for="pdfs">PDF files <span class="req">*</span></label>
+        <input id="pdfs" name="pdfs" type="file" accept="application/pdf,.pdf" multiple required>
+        <p class="hint" id="bulk-count">Select one or more PDFs (up to 100 MB each).</p>
+      </div>
+
+      <div class="form-row">
+        <div class="filter-group">
+          <label for="category">Category for all <span class="req">*</span></label>
+          <input id="category" name="category" type="text" required maxlength="100" list="category-suggestions">
+          <datalist id="category-suggestions">
+            {% for row in nav_categories %}<option value="{{ row }}">{% endfor %}
+          </datalist>
+        </div>
+        <div class="filter-group">
+          <label for="language">Language for all</label>
+          <input id="language" name="language" type="text" maxlength="60" value="English">
+        </div>
+      </div>
+
+      <div class="check-row">
+        <label class="check-line"><input type="checkbox" name="parse_names" value="1" checked> Fill missing titles/authors from filenames like “Author - Title.pdf”</label>
+        <label class="check-line"><input type="checkbox" name="published" value="1" checked> Publish immediately</label>
+      </div>
+
+      <div class="detail-actions">
+        <button type="submit" class="btn btn-primary">Upload and add books</button>
+        <a class="btn btn-ghost" href="{{ url_for('admin.dashboard') }}">Cancel</a>
+      </div>
+    </form>
+
+    {% if results %}
+    <div class="subsection">
+      <h2>Upload results</h2>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>File</th><th>Status</th><th>Details</th></tr></thead>
+          <tbody>
+            {% for r in results %}
+            <tr>
+              <td>{{ r.filename }}</td>
+              <td>
+                {% if r.ok %}<span class="badge badge-pub">Added</span>
+                {% else %}<span class="badge badge-draft">Failed</span>{% endif %}
+              </td>
+              <td>{% if r.ok %}<b>{{ r.title }}</b> — {{ r.detail }}{% else %}{{ r.detail }}{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

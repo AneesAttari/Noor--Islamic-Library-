@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Trash — {{ app_name }}{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <p class="eyebrow">Administration</p>
+    <h1>Trash</h1>
+    <p class="page-sub">Deleted books rest here with all their files. Restore a book to bring it back, or delete it forever to free the storage.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    {% if books %}
+    <div class="table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr><th>Title</th><th>Author</th><th>Trashed</th><th>Size</th><th class="col-actions">Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for book in books %}
+          <tr>
+            <td class="table-title">{{ book['title'] }}</td>
+            <td>{{ book['author'] }}</td>
+            <td>{{ book['deleted_at']|humandate }}</td>
+            <td>{{ book['pdf_size']|humansize }}</td>
+            <td class="col-actions">
+              <div class="action-row">
+                <form method="post" action="{{ url_for('admin.book_restore', book_id=book['id']) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-ghost btn-sm">Restore</button>
+                </form>
+                <form method="post" action="{{ url_for('admin.book_purge', book_id=book['id']) }}" class="confirm-purge" data-title="{{ book['title'] }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-danger-ghost btn-sm">Delete forever</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty-state">
+        <h2>Trash is empty</h2>
+        <p>Books you delete will appear here until you remove them permanently.</p>
+        <a class="btn btn-primary" href="{{ url_for('admin.dashboard') }}">Back to dashboard</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

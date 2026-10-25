@@ -3,7 +3,7 @@
 {% block title %}Reading: {{ book['title'] }} — {{ app_name }}{% endblock %}
 
 {% block content %}
-<section class="reader" data-pdf-url="{{ url_for('public.book_pdf', book_id=book['id']) }}">
+<section class="reader" data-pdf-url="{{ url_for('public.book_pdf', book_id=book['id']) }}" data-book-id="{{ book['id'] }}">
   <div class="reader-toolbar">
     <div class="reader-toolbar-row">
       <a class="reader-back" href="{{ url_for('public.book_detail', book_id=book['id']) }}">&larr; Back to book</a>
@@ -25,13 +25,28 @@
         <button type="button" class="btn btn-ghost btn-sm" id="btn-zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
         <button type="button" class="btn btn-ghost btn-sm" id="btn-fit">Fit width</button>
       </div>
+      <div class="control-group mode-group">
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-mode-single" aria-pressed="true">Single page</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-mode-scroll" aria-pressed="false">Scroll</button>
+      </div>
     </div>
+
+    <div class="reader-progress" aria-hidden="true">
+      <div class="reader-progress-bar" id="progress-bar"></div>
+    </div>
+    <p class="sr-only" aria-live="polite" id="page-announce"></p>
   </div>
 
   <div class="reader-stage" id="reader-stage">
     <div class="reader-loading" id="reader-loading">
       <div class="spinner" aria-hidden="true"></div>
       <p>Loading PDF…</p>
+    </div>
+
+    <div class="resume-bar" id="resume-bar" hidden>
+      <p id="resume-text">You stopped at page 1.</p>
+      <button type="button" class="btn btn-primary btn-sm" id="btn-resume">Resume</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-restart">Start over</button>
     </div>
 
     <div class="reader-error" id="reader-error" hidden>
@@ -42,6 +57,7 @@
     </div>
 
     <canvas id="pdf-canvas" hidden></canvas>
+    <div id="scroll-container" class="scroll-container" hidden></div>
 
     <div class="reader-nav-mobile">
       <button type="button" class="btn btn-secondary" id="btn-prev-m">← Previous</button>
