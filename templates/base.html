@@ -5,8 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ app_name }} — {{ app_tagline }}{% endblock %}</title>
   <meta name="description" content="{% block meta_description %}A public digital library of Islamic books in PDF. Browse, search, and read online — free, no account required.{% endblock %}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+  <!-- share previews (Open Graph / Twitter) -->
+  <meta property="og:site_name" content="{{ app_name }}">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:title" content="{% block og_title %}{{ app_name }} — {{ app_tagline }}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}A public digital library of Islamic books in PDF. Browse, search, and read online — free, no account required.{% endblock %}">
+  <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='img/share-card.png', _external=True) }}{% endblock %}">
+  <meta property="og:url" content="{% block og_url %}{{ request.url_root }}{% endblock %}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{% block tw_title %}{{ app_name }} — {{ app_tagline }}{% endblock %}">
+  <meta name="twitter:description" content="{% block tw_description %}A public digital library of Islamic books in PDF. Free, no account required.{% endblock %}">
+  <meta name="twitter:image" content="{% block tw_image %}{{ url_for('static', filename='img/share-card.png', _external=True) }}{% endblock %}">
+
+  <!-- PWA / add-to-home-screen -->
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#0f6b4f">
   <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icon-180.png') }}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="{{ app_name }}">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
   {% block head %}{% endblock %}
 </head>
 <body>
@@ -36,6 +57,7 @@
         <a href="{{ url_for('public.index') }}" class="{{ 'active' if request.endpoint == 'public.index' }}">Home</a>
         <a href="{{ url_for('public.catalogue') }}" class="{{ 'active' if request.endpoint == 'public.catalogue' }}">Catalogue</a>
         <a href="{{ url_for('public.categories') }}" class="{{ 'active' if request.endpoint == 'public.categories' }}">Categories</a>
+        <a href="{{ url_for('public.about') }}" class="{{ 'active' if request.endpoint == 'public.about' }}">About</a>
         {% if session.get('admin_id') %}
           <a href="{{ url_for('admin.dashboard') }}" class="{{ 'active' if request.blueprint == 'admin' }}">Admin</a>
           <form class="inline-form" method="post" action="{{ url_for('admin.logout') }}">
@@ -45,18 +67,19 @@
         {% else %}
           <a href="{{ url_for('admin.login') }}" class="nav-muted">Admin</a>
         {% endif %}
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Change colour theme">Theme</button>
       </nav>
     </div>
   </header>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="container flash-stack" aria-live="polite">
+    <div class="container flash-stack" aria-live="polite">
+      {% if messages %}
         {% for category, message in messages %}
           <div class="flash flash-{{ category }}">{{ message }}</div>
         {% endfor %}
-      </div>
-    {% endif %}
+      {% endif %}
+    </div>
   {% endwith %}
 
   <main id="main">
@@ -74,12 +97,15 @@
         <ul class="footer-links">
           <li><a href="{{ url_for('public.catalogue') }}">Full catalogue</a></li>
           <li><a href="{{ url_for('public.catalogue', sort='newest') }}">Recently added</a></li>
+          <li><a href="{{ url_for('public.catalogue', sort='popular') }}">Most read</a></li>
           <li><a href="{{ url_for('public.categories') }}">Categories</a></li>
         </ul>
       </div>
       <div>
-        <p class="footer-label">Administration</p>
+        <p class="footer-label">The library</p>
         <ul class="footer-links">
+          <li><a href="{{ url_for('public.about') }}">About us</a></li>
+          <li><a href="{{ url_for('public.contact') }}">Contact &amp; suggestions</a></li>
           <li><a href="{{ url_for('admin.login') }}">Administrator sign in</a></li>
         </ul>
       </div>

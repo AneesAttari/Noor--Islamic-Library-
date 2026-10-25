@@ -260,14 +260,14 @@ label {
 
 /* ---------- flash messages ---------- */
 
-.flash-stack { margin-top: 18px; }
+.flash-stack { margin-top: 0; }
 
 .flash {
   padding: 0.85em 1.15em;
   border-radius: var(--radius);
   border: 1.5px solid var(--line-strong);
   background: var(--paper);
-  margin-bottom: 10px;
+  margin: 18px 0 0;
   font-size: 0.95rem;
 }
 .flash-success { border-color: var(--emerald); background: var(--emerald-soft); color: var(--emerald-dark); }
@@ -996,4 +996,180 @@ label {
   border-radius: 3px;
   padding: 0.1em 0.35em;
   font-size: 0.9em;
+}
+
+/* ============================================================
+   Round 3: themes, print, prose, accessibility
+   ============================================================ */
+
+/* contrast: slightly darker muted tone (>=4.5:1 on ivory) */
+:root { --muted: #6f6656; }
+
+/* ---------- theme: Dark ---------- */
+[data-theme="dark"] {
+  --ivory: #1a1815;
+  --paper: #221f1b;
+  --paper-alt: #26221d;
+  --ink: #ece7dc;
+  --ink-soft: #c9c2b4;
+  --muted: #a89e8c;
+  --line: #3a352e;
+  --line-strong: #554d42;
+  --emerald: #5cbc96;
+  --emerald-dark: #7fd0ab;
+  --emerald-soft: #24352e;
+  --danger: #e2938c;
+  --danger-soft: #3a2724;
+  --gold: #c9a959;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+[data-theme="dark"] .btn-primary {
+  background: var(--emerald);
+  border-color: var(--emerald);
+  color: #14201a;
+}
+[data-theme="dark"] .btn-primary:hover {
+  background: var(--emerald-dark);
+  border-color: var(--emerald-dark);
+  color: #14201a;
+}
+[data-theme="dark"] .mode-group .btn[aria-pressed="true"] {
+  color: var(--emerald-dark);
+}
+[data-theme="dark"] .spinner { border-top-color: var(--emerald); }
+
+/* ---------- theme: Warm (deeper sepia) ---------- */
+[data-theme="warm"] {
+  --ivory: #f2e7cf;
+  --paper: #f9f0da;
+  --paper-alt: #e9dcc0;
+  --ink: #3a2f22;
+  --ink-soft: #57462f;
+  --muted: #7a664c;
+  --line: #d9c8a4;
+  --line-strong: #c3ae84;
+  --emerald: #0c5d43;
+  --emerald-dark: #084632;
+  --emerald-soft: #e2d7b8;
+  --danger: #8c342c;
+  --danger-soft: #ecd9d2;
+  --gold: #8a6d1f;
+}
+
+/* ---------- theme toggle in nav ---------- */
+.theme-toggle {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 0.35em 0.85em;
+  cursor: pointer;
+}
+.theme-toggle:hover { color: var(--emerald); border-color: var(--emerald); }
+
+/* ---------- prose pages (About) ---------- */
+.prose { max-width: 68ch; }
+.prose h2 {
+  font-size: 1.32rem;
+  margin-top: 2.1em;
+  margin-bottom: 0.55em;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.45em;
+}
+.prose h2:first-child { margin-top: 0; }
+.prose p { color: var(--ink-soft); }
+.prose a { text-decoration: underline; text-underline-offset: 2px; }
+.note-line {
+  background: var(--paper);
+  border-left: 3px solid var(--emerald);
+  padding: 0.85em 1.15em;
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.stat-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.stat-list li {
+  padding: 0.65em 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+.stat-list strong { color: var(--emerald); font-family: var(--serif); font-size: 1.12em; }
+
+/* ---------- citation block ---------- */
+.citation-block { border-top: 2px solid var(--line-strong); padding-top: 1.25rem; }
+.citation-text {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1em 1.25em;
+  font-family: var(--serif);
+  font-size: 1.02rem;
+  line-height: 1.7;
+}
+.citation-text i { font-style: italic; }
+
+/* ---------- admin messages table ---------- */
+.message-cell {
+  max-width: 340px;
+  white-space: pre-line;
+  font-size: 0.9em;
+}
+
+/* ---------- empty-state ornament ---------- */
+.empty-state::before {
+  content: "";
+  display: block;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect x='4' y='4' width='40' height='40' rx='3' fill='none' stroke='%230f6b4f' stroke-width='2.2'/%3E%3Crect x='12.7' y='12.7' width='22.6' height='22.6' transform='rotate(45 24 24)' fill='none' stroke='%230f6b4f' stroke-width='2.2'/%3E%3Ccircle cx='24' cy='24' r='6.2' fill='%230f6b4f'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  opacity: 0.55;
+}
+
+/* ---------- focus & keyboard visibility ---------- */
+.nav-link-btn:focus-visible, .theme-toggle:focus-visible {
+  outline: 2px solid var(--emerald);
+  outline-offset: 2px;
+}
+
+/* ---------- print styles ---------- */
+@media print {
+  .site-header, .site-footer, .flash-stack, .skip-link,
+  .detail-actions, .filters, .reader-toolbar, .reader-nav-mobile,
+  .hero-search, .hero-chips, .section-link, .pagination,
+  .admin-actions, .theme-toggle, nav, form { display: none !important; }
+
+  body { background: #fff; color: #000; font-size: 11.5pt; }
+  .section { padding: 0.5cm 0; }
+  .container { max-width: 100%; padding: 0; }
+
+  .detail-layout { grid-template-columns: 5cm 1fr; gap: 0.8cm; }
+  .detail-cover img { max-width: 5cm; }
+  .detail-preview { display: none; }
+
+  .citation-block { border-top: 1pt solid #000; page-break-inside: avoid; }
+  .citation-text { border: 0; padding: 0; background: none; }
+
+  a { color: #000; text-decoration: none; }
+  h1, h2, h3 { color: #000; page-break-after: avoid; }
+  .book-card-cover img { max-height: 7cm; }
+}
+
+/* ---------- bundled Arabic serif (works offline / no CDN) ---------- */
+@font-face {
+  font-family: "Noto Naskh Maktaba";
+  src: url("../fonts/NotoNaskhArabic.ttf") format("truetype");
+  font-weight: 400 700;
+  font-display: swap;
+}
+[dir="rtl"] {
+  font-family: "Noto Naskh Maktaba", "Geeza Pro", "Noto Naskh Arabic", "Segoe UI", serif;
 }

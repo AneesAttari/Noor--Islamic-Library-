@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}About — {{ app_name }}{% endblock %}
+{% block meta_description %}About {{ app_name }} — a free public digital library of Islamic books in PDF.{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <p class="eyebrow">About</p>
+    <h1>A free public library of Islamic&nbsp;books</h1>
+    <p class="page-sub">{{ app_name }} is an open digital library. Anyone may browse, search, and read every published book — free, without an account.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container prose">
+    <h2>Our mission</h2>
+    <p>Good books are the foundation of good learning. {{ app_name }} exists to make reliable Islamic literature — Qur'an studies, hadith, fiqh, history, education, and reference works — freely available to students, teachers, and curious readers everywhere, on any device.</p>
+
+    <h2>What the library contains</h2>
+    <p>The catalogue holds books in PDF form with full bibliographic information: title, author, description, category, language, and page count. Every book is read online in the browser or downloaded for offline reading. Search covers the full text inside every PDF, not just the titles.</p>
+
+    <h2>How the library is managed</h2>
+    <p>Books are added and maintained by library administrators. Visitors never need an account — reading is open to all. Changes to the catalogue are recorded in an internal audit log for accountability.</p>
+    <p class="note-line"><em>A note on the current collection:</em> the catalogue currently contains short sample booklets produced for the launch of this platform. Real titles are welcome — see below.</p>
+
+    <h2>Suggest a book or report a problem</h2>
+    <p>If you know a book that belongs here, found a broken file, or have any other message for the library team, please <a href="{{ url_for('public.contact') }}">use the contact form</a>. Messages go directly to the administrators.</p>
+
+    <h2>At a glance</h2>
+    <ul class="stat-list">
+      <li><strong>{{ stats.published }}</strong> published books</li>
+      <li><strong>{{ stats.categories }}</strong> categories</li>
+      <li><strong>Free forever</strong> — no accounts, no ads, no tracking of readers</li>
+    </ul>
+  </div>
+</section>
+{% endblock %}

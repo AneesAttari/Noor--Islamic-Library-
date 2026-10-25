@@ -25,6 +25,7 @@
       <a class="btn btn-primary" href="{{ url_for('admin.book_new') }}">+ Add a book</a>
       <a class="btn btn-secondary" href="{{ url_for('admin.book_bulk') }}">Bulk upload</a>
       <a class="btn btn-ghost" href="{{ url_for('admin.terms') }}">Categories &amp; languages</a>
+      <a class="btn btn-ghost" href="{{ url_for('admin.messages') }}">Messages{% if unread_messages %} ({{ unread_messages }} new){% endif %}</a>
       <a class="btn btn-ghost" href="{{ url_for('admin.audit_log') }}">Audit log</a>
       <a class="btn btn-ghost" href="{{ url_for('admin.trash') }}">Trash{% if stats.trashed %} ({{ stats.trashed }}){% endif %}</a>
       <a class="btn btn-ghost" href="{{ url_for('admin.backup') }}">Download backup</a>

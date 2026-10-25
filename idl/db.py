@@ -86,6 +86,17 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 CREATE INDEX IF NOT EXISTS idx_audit_time ON audit_log(created_at DESC);
 
+CREATE TABLE IF NOT EXISTS contact_messages (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    name       TEXT    NOT NULL DEFAULT '',
+    email      TEXT    NOT NULL DEFAULT '',
+    subject    TEXT    NOT NULL DEFAULT '',
+    message    TEXT    NOT NULL,
+    status     TEXT    NOT NULL DEFAULT 'new' CHECK (status IN ('new','read')),
+    created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE INDEX IF NOT EXISTS idx_messages_status ON contact_messages(status);
+
 CREATE INDEX IF NOT EXISTS idx_books_published ON books(published);
 CREATE INDEX IF NOT EXISTS idx_books_category  ON books(category);
 CREATE INDEX IF NOT EXISTS idx_books_language  ON books(language);
@@ -659,6 +670,49 @@ def stats() -> dict[str, int]:
 
 def page_count(total_items: int, per_page: int) -> int:
     return max(1, math.ceil(total_items / per_page)) if total_items else 1
+
+
+# --------------------------------------------------------------------------
+# contact messages
+# --------------------------------------------------------------------------
+
+def add_message(name: str, email: str, subject: str, message: str) -> int:
+    cur = get_db().execute(
+        "INSERT INTO contact_messages (name, email, subject, message) VALUES (?, ?, ?, ?)",
+        (name, email, subject, message),
+    )
+    get_db().commit()
+    return int(cur.lastrowid)
+
+
+def list_messages() -> list[sqlite3.Row]:
+    return get_db().execute(
+        "SELECT * FROM contact_messages ORDER BY created_at DESC LIMIT 200"
+    ).fetchall()
+
+
+def get_message(message_id: int) -> Optional[sqlite3.Row]:
+    return get_db().execute(
+        "SELECT * FROM contact_messages WHERE id = ?", (message_id,)
+    ).fetchone()
+
+
+def set_message_status(message_id: int, status: str) -> None:
+    get_db().execute(
+        "UPDATE contact_messages SET status = ? WHERE id = ?", (status, message_id)
+    )
+    get_db().commit()
+
+
+def delete_message(message_id: int) -> None:
+    get_db().execute("DELETE FROM contact_messages WHERE id = ?", (message_id,))
+    get_db().commit()
+
+
+def unread_message_count() -> int:
+    return get_db().execute(
+        "SELECT COUNT(*) AS n FROM contact_messages WHERE status = 'new'"
+    ).fetchone()["n"]
 
 
 def all_books_for_export() -> list[sqlite3.Row]:

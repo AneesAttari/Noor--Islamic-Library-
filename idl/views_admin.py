@@ -132,6 +132,7 @@ def dashboard():
         books=books,
         stats=db.stats(),
         featured_order=db.featured_ordered(),
+        unread_messages=db.unread_message_count(),
     )
 
 
@@ -566,6 +567,41 @@ def term_delete():
 @admin_required
 def audit_log():
     return render_template("admin/audit.html", entries=db.audit_entries(200))
+
+
+# --------------------------------------------------------------------------
+# contact message inbox
+# --------------------------------------------------------------------------
+
+@bp.route("/messages")
+@admin_required
+def messages():
+    return render_template("admin/messages.html", messages=db.list_messages())
+
+
+@bp.route("/messages/<int:message_id>/read", methods=["POST"])
+@admin_required
+@_csrf_protect
+def message_read(message_id: int):
+    msg = db.get_message(message_id)
+    if msg is None:
+        abort(404)
+    db.set_message_status(message_id, "read")
+    _audit("message_read", detail=f"contact message #{message_id} marked read")
+    return redirect(url_for("admin.messages"))
+
+
+@bp.route("/messages/<int:message_id>/delete", methods=["POST"])
+@admin_required
+@_csrf_protect
+def message_delete(message_id: int):
+    msg = db.get_message(message_id)
+    if msg is None:
+        abort(404)
+    db.delete_message(message_id)
+    _audit("message_delete", detail=f"contact message #{message_id} deleted")
+    flash("Message deleted.", "success")
+    return redirect(url_for("admin.messages"))
 
 
 # --------------------------------------------------------------------------

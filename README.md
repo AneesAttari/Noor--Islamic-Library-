@@ -25,13 +25,23 @@ external services, trivial to back up (two directories).
   +/− zoom), **single-page and continuous-scroll modes**, a progress bar,
   and **“continue where you left off”** (position remembered per book in
   `localStorage` — no account needed)
-- RTL rendering for Arabic-script titles and authors
+- RTL rendering for Arabic-script titles and authors (bundled Noto Naskh
+  Arabic font — works offline)
+- **Light / Dark / Warm colour themes** — visitor's choice remembered on
+  their device; applies site-wide including the reader
+- **About & Contact pages** with a real message inbox for administrators
+  (per-IP throttled, no email service required)
+- **Share previews** (Open Graph / Twitter cards — book pages show the cover)
+- **Installable as an app** (PWA manifest + icons + minimal offline shell)
+- **How to cite** (Chicago-style citation) and print-optimised book pages
 - Download as PDF
 - Clear loading, empty, and error states throughout
 
 **Administration** (`/admin`)
 - Login with throttling (10 failures / 15 min per account+IP → 429)
-- Dashboard with statistics, the full book list, and read/download counts
+- Dashboard with statistics, the full book list, read/download counts, and
+  unread contact-message count
+- **Contact message inbox** (mark read / delete)
 - Add a book: PDF upload (validated), optional cover upload, metadata
   **auto-filled from the PDF's embedded title/author**
 - **Bulk upload**: many PDFs at once, titles/authors parsed from PDF metadata
@@ -136,16 +146,18 @@ Restore by copying them back.
 python3 -m pytest tests/ -v
 ```
 
-37 end-to-end tests cover: public browsing/search/detail/reader, PDF
+47 end-to-end tests cover: public browsing/search/detail/reader, PDF
 streaming and Range requests, unpublished-book protection, login (wrong
 password, wrong CSRF, rate limiting, logout), real multipart uploads with
 disk persistence, invalid upload rejection, edit/PDF-replacement with
 revision recovery, trash → restore → permanent delete with file cleanup,
-missing-CSRF rejection, secret-leak checks — plus the Round 1/2 features:
+missing-CSRF rejection, secret-leak checks — plus the feature rounds:
 PDF full-text search, reader resume UI, RTL detection, read/download
 counting and the popular shelf, first-page previews, bulk upload, PDF
 metadata probing, category rename/merge, the audit log, featured pinning,
-backup zips, and CSV export.
+backup zips, CSV export, the contact form with rate limiting and admin
+inbox, share previews, PWA manifest, citation/print support, themes, and
+the bundled Arabic font.
 
 All flows were also smoke-tested against the running server with curl.
 

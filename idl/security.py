@@ -103,6 +103,19 @@ def clear_login_failures(key: str) -> None:
         _attempts.pop(key, None)
 
 
+def throttle_blocked(key: str, limit: int, window: int) -> bool:
+    """Generic sliding-window throttle (used for the contact form)."""
+    now = time.time()
+    with _lock:
+        bucket = _prune(_attempts.get(key, []), now)
+        if len(bucket) >= limit:
+            _attempts[key] = bucket
+            return True
+        bucket.append(now)
+        _attempts[key] = bucket
+        return False
+
+
 # --------------------------------------------------------------------------
 # session / decorators
 # --------------------------------------------------------------------------

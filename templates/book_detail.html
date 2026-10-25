@@ -2,6 +2,14 @@
 
 {% block title %}{{ book['title'] }} — {{ app_name }}{% endblock %}
 {% block meta_description %}{{ book['description'][:160] if book['description'] else book['title'] ~ ' by ' ~ book['author'] }}{% endblock %}
+{% block og_type %}book{% endblock %}
+{% block og_title %}{{ book['title'] }} — {{ book['author'] }}{% endblock %}
+{% block og_description %}{{ (book['description'][:200] if book['description'] else 'Read "' ~ book['title'] ~ '" online at ' ~ app_name ~ ' — free, no account required.') }}{% endblock %}
+{% block og_image %}{{ url_for('public.book_cover', book_id=book['id'], _external=True) }}{% endblock %}
+{% block og_url %}{{ url_for('public.book_detail', book_id=book['id'], _external=True) }}{% endblock %}
+{% block tw_title %}{{ book['title'] }} — {{ book['author'] }}{% endblock %}
+{% block tw_description %}{{ (book['description'][:200] if book['description'] else 'Read "' ~ book['title'] ~ '" online at ' ~ app_name ~ ' — free, no account required.') }}{% endblock %}
+{% block tw_image %}{{ url_for('public.book_cover', book_id=book['id'], _external=True) }}{% endblock %}
 
 {% block content %}
 <section class="section">
@@ -43,8 +51,9 @@
         {% endif %}
 
         <div class="detail-actions">
-          <a class="btn btn-primary" id="read-btn" href="{{ url_for('public.read', book_id=book['id']) }}">Read online</a>
+          <a class="btn btn-primary" id="read-btn" data-book-id="{{ book['id'] }}" href="{{ url_for('public.read', book_id=book['id']) }}">Read online</a>
           <a class="btn btn-secondary" href="{{ url_for('public.book_pdf', book_id=book['id'], download=1) }}">Download PDF</a>
+          <button type="button" class="btn btn-ghost" id="print-btn">Print / save as PDF</button>
           {% if session.get('admin_id') %}
             <a class="btn btn-ghost" href="{{ url_for('admin.book_edit', book_id=book['id']) }}">Edit in admin</a>
           {% endif %}
@@ -71,24 +80,12 @@
       </div>
     </div>
     {% endif %}
+
+    <div class="subsection citation-block">
+      <h2>How to cite this book</h2>
+      <p class="citation-text">{{ citation | safe }}</p>
+      <p class="hint">Chicago style, generated from this library’s catalogue record. Adjust to your required format.</p>
+    </div>
   </div>
 </section>
-{% endblock %}
-
-{% block scripts %}
-<script>
-  (function () {
-    var btn = document.getElementById('read-btn');
-    if (!btn) return;
-    try {
-      var raw = localStorage.getItem('maktaba:pos:{{ book["id"] }}');
-      if (!raw) return;
-      var pos = JSON.parse(raw);
-      if (pos && pos.page > 1) {
-        btn.textContent = 'Continue reading — page ' + pos.page;
-        btn.href = btn.href.split('?')[0] + '?p=' + pos.page;
-      }
-    } catch (e) {}
-  })();
-</script>
 {% endblock %}

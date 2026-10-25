@@ -8,12 +8,13 @@ from flask import (
     Blueprint,
     Response,
     abort,
+    flash,
     render_template,
     request,
     send_file,
 )
 
-from . import config, db, storage
+from . import config, db, security, storage
 from .covers import render_cover_svg
 from .security import current_admin, ensure_csrf_token
 
@@ -99,13 +100,58 @@ def categories():
     )
 
 
+@bp.route("/about")
+def about():
+    return render_template("about.html", stats=db.stats())
+
+
+@bp.route("/contact", methods=["GET", "POST"])
+def contact():
+    if request.method == "GET":
+        return render_template("contact.html", sent=False)
+
+    # light per-IP throttle: 5 messages per hour
+    if security.throttle_blocked(f"contact|{request.remote_addr}", limit=5, window=3600):
+        flash("You have sent several messages recently. Please wait a while before sending another.", "error")
+        return render_template("contact.html", sent=False), 429
+
+    name = (request.form.get("name") or "").strip()[:150]
+    email = (request.form.get("email") or "").strip()[:200]
+    subject = (request.form.get("subject") or "").strip()[:300]
+    message = (request.form.get("message") or "").strip()
+
+    if not message or len(message) < 5:
+        flash("Please write a message (at least a few words).", "error")
+        return render_template("contact.html", sent=False, name=name, email=email,
+                               subject=subject, message=message), 400
+    if len(message) > 5000:
+        flash("Message is too long (5000 characters maximum).", "error")
+        return render_template("contact.html", sent=False, name=name, email=email,
+                               subject=subject, message=""), 400
+
+    db.add_message(name, email, subject, message)
+    return render_template("contact.html", sent=True)
+
+
+def make_citation(book) -> str:
+    """Chicago-style citation string generated from the catalogue metadata."""
+    year = (book["created_at"] or "")[:4] or "n.d."
+    pages = f"{book['page_count']} pp." if book["page_count"] else "PDF"
+    return (
+        f"{book['author']}. <i>{book['title']}</i>. {book['category']}. "
+        f"{config.APP_NAME} — {config.APP_TAGLINE}, {year}. PDF, {pages}."
+    )
+
+
 @bp.route("/books/<int:book_id>")
 def book_detail(book_id: int):
     book = db.get_book(book_id, published_only=not _is_admin())
     if book is None:
         abort(404)
     related = db.related_books(book)
-    return render_template("book_detail.html", book=book, related=related)
+    return render_template(
+        "book_detail.html", book=book, related=related, citation=make_citation(book)
+    )
 
 
 @bp.route("/books/<int:book_id>/read")

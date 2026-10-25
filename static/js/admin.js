@@ -28,6 +28,14 @@
     });
   });
 
+  document.querySelectorAll('form.confirm-delete-msg').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      if (!window.confirm('Delete this message permanently?')) {
+        event.preventDefault();
+      }
+    });
+  });
+
   // Show the chosen file name next to file inputs for clarity.
   document.querySelectorAll('input[type="file"]').forEach(function (input) {
     input.addEventListener('change', function () {

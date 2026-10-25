@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Contact messages — {{ app_name }}{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <p class="eyebrow">Administration</p>
+    <h1>Contact messages</h1>
+    <p class="page-sub">Messages sent through the public contact form. Showing the latest 200.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    {% if messages %}
+    <div class="table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr><th>Received</th><th>From</th><th>Subject</th><th>Message</th><th>Status</th><th class="col-actions">Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for m in messages %}
+          <tr>
+            <td class="muted">{{ m['created_at'][:16].replace('T', ' ') }} UTC</td>
+            <td>
+              {{ m['name'] or 'Anonymous' }}
+              {% if m['email'] %}<br><a href="mailto:{{ m['email'] }}">{{ m['email'] }}</a>{% endif %}
+            </td>
+            <td>{{ m['subject'] or '—' }}</td>
+            <td class="message-cell">{{ m['message'] }}</td>
+            <td>
+              {% if m['status'] == 'new' %}<span class="badge badge-draft">New</span>
+              {% else %}<span class="badge badge-pub">Read</span>{% endif %}
+            </td>
+            <td class="col-actions">
+              <div class="action-row">
+                {% if m['status'] == 'new' %}
+                <form method="post" action="{{ url_for('admin.message_read', message_id=m['id']) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-ghost btn-sm">Mark read</button>
+                </form>
+                {% endif %}
+                <form method="post" action="{{ url_for('admin.message_delete', message_id=m['id']) }}" class="confirm-delete-msg">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-danger-ghost btn-sm">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty-state">
+        <h2>No messages yet</h2>
+        <p>Messages visitors send through the contact form will appear here.</p>
+        <a class="btn btn-primary" href="{{ url_for('admin.dashboard') }}">Back to dashboard</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}
